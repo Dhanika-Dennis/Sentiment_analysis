@@ -1,35 +1,25 @@
-import gradio as gr
-from nltk.sentiment import SentimentIntensityAnalyzer
-import nltk
+from flask import Flask, render_template, request
+from textblob import TextBlob
 
+app = Flask(__name__)
 
-nltk.download('vader_lexicon')
-
-
-sia = SentimentIntensityAnalyzer()
-
-def analyze_sentiment(text):
-    scores = sia.polarity_scores(text)
-    compound_score = scores['compound']
+@app.route('/', methods=['GET', 'POST'])
+def analyze_sentiment():
+    result = None
+    if request.method == 'POST':
+        text = request.form['text']
+        if text:
+            analysis = TextBlob(text)
+            polarity = analysis.sentiment.polarity
+            
+            if polarity > 0:
+                result = "Positive Sentiment"
+            elif polarity < 0:
+                result = "Negative Sentiment"
+            else:
+                result = "Neutral Sentiment"
     
-    if compound_score >= 0.05:
-        sentiment = "Positive"
-    elif compound_score <= -0.05:
-        sentiment = "Negative"
-    else:
-        sentiment = "Neutral"
-    
-    return f"Sentiment: {sentiment}\nScores: {scores}"
+    return render_template('index.html', result=result)
 
-iface = gr.Interface(
-    fn=analyze_sentiment,
-    inputs=gr.Textbox(placeholder="Enter text here..."),
-    outputs="text",
-    title="Sentiment Analysis Tool",
-    description="Enter a sentence or paragraph to analyze its sentiment."
-)
-
-
-if __name__ == "__main__":
-    iface.launch()
-
+if __name__ == '__main__':
+    app.run(debug=True)
